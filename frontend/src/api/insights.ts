@@ -1,5 +1,5 @@
 export async function* streamInsights(): AsyncGenerator<string> {
-  const response = await fetch('http://localhost:8000/api/insights/generate', {
+  const response = await fetch('/api/insights/generate', {
     method: 'POST',
     headers: { 'Accept': 'text/event-stream' },
   })
