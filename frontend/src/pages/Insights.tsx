@@ -8,16 +8,19 @@ import { toast } from 'sonner'
 export function Insights() {
   const [content, setContent] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleGenerate() {
     setContent('')
+    setError(null)
     setIsStreaming(true)
     try {
       for await (const token of streamInsights()) {
         setContent(prev => prev + token)
       }
     } catch (e: any) {
-      toast.error('Error generating insights', { description: e.message })
+      setError(e.message)
+      toast.error('Failed to generate insights', { description: e.message })
     } finally {
       setIsStreaming(false)
     }
@@ -50,7 +53,22 @@ export function Insights() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <InsightsPanel content={content} isStreaming={isStreaming} />
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-red-500 text-lg">⚠️</span>
+                <div>
+                  <p className="text-sm font-semibold text-red-700">Could not generate insights</p>
+                  <p className="text-sm text-red-600 mt-1">{error}</p>
+                  <p className="text-xs text-red-400 mt-2">
+                    Update <code className="bg-red-100 px-1 rounded">backend/.env</code> with valid Azure OpenAI credentials and restart the backend.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <InsightsPanel content={content} isStreaming={isStreaming} />
+          )}
         </CardContent>
       </Card>
     </div>

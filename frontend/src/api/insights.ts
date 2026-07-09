@@ -4,6 +4,10 @@ export async function* streamInsights(): AsyncGenerator<string> {
     headers: { 'Accept': 'text/event-stream' },
   })
 
+  if (!response.ok) {
+    throw new Error(`Server error: HTTP ${response.status}`)
+  }
+
   const reader = response.body!.getReader()
   const decoder = new TextDecoder()
 
@@ -17,8 +21,12 @@ export async function* streamInsights(): AsyncGenerator<string> {
       if (data === '[DONE]') return
       try {
         const parsed = JSON.parse(data)
+        if (parsed.error) throw new Error(parsed.error)
         if (parsed.token) yield parsed.token
-      } catch {}
+      } catch (e) {
+        if (e instanceof SyntaxError) continue
+        throw e
+      }
     }
   }
 }

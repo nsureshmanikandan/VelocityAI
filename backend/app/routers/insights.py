@@ -15,9 +15,18 @@ def generate_insights(db: Session = Depends(get_db)):
     metrics_json = json.dumps({"summary": summary, "team": team}, indent=2)
 
     def event_stream():
-        for token in stream_insights(metrics_json):
-            yield f"data: {json.dumps({'token': token})}\n\n"
-        yield "data: [DONE]\n\n"
+        try:
+            for token in stream_insights(metrics_json):
+                yield f"data: {json.dumps({'token': token})}\n\n"
+        except Exception as e:
+            error_msg = str(e)
+            if "401" in error_msg or "authentication" in error_msg.lower() or "invalid subscription" in error_msg.lower():
+                error_msg = "Azure OpenAI authentication failed — check your API key and endpoint in backend/.env"
+            elif "connection" in error_msg.lower() or "endpoint" in error_msg.lower():
+                error_msg = "Cannot reach Azure OpenAI endpoint — check AZURE_OPENAI_ENDPOINT in backend/.env"
+            yield f"data: {json.dumps({'error': error_msg})}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         event_stream(),
